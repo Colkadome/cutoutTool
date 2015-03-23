@@ -18,31 +18,28 @@ shinyServer(function(input, output, session) {
     getBackground = reactive({
         testImg = readPNG("www/test2.png")
         pixels = testImg[,,1] # get red pixels?
-        return=image(x=1:200,
-                     y=1:200,
-                     z=pixels,
-                     col=rainbow(100,start=0.6,end=1.0),
-                     xlab="xlab",
-                     ylab="ylab")
+        return = pixels
     })
     
     output$plot1=renderPlot({
         
         # output back image
-        getBackground()
-
-        if(!is.null(input$click1)) {
-            
-            # output ovals
-            par(new=TRUE)
-            image(x=1:200,
-                  y=1:200,
-                  z=matrix(c(1,NA,NA,NA),nrow=200,ncol=200),
-                  col=rainbow(100,start=(input$click1$x/200),end=1.0),
-                  ann=F,
-                  xaxt="n",
-                  yaxt="n")
+        bgrnd = getBackground()
+        ovals = matrix(c(1,0,0,0),nrow=200,ncol=200)
+        pixels = bgrnd
+        pixels[ovals>0] = 1
+        
+        scale = 0
+        if(!is.null(input$click1$x)) {
+            scale = input$click1$x/200
         }
+        
+        image(x=1:200,
+              y=1:200,
+              z=pixels,
+              col=rainbow(100,start=scale,end=1.0),
+              xlab="xlab",
+              ylab="ylab")
     })
     
     observe({
