@@ -1,27 +1,48 @@
 library(png)
 library(FITSio)
 library(astro)
-library(magicaxis)
+
+ovals = list()
+c(ovals,
+  list(
+      "x"=20,
+      "y"=20,
+      "raX"=20,
+      "raY"=20,
+      "rot"=0.4
+  )
+)
 
 shinyServer(function(input, output, session) {
     
+    getBackground = reactive({
+        testImg = readPNG("www/test2.png")
+        pixels = testImg[,,1] # get red pixels?
+        return=image(x=1:200,
+                     y=1:200,
+                     z=pixels,
+                     col=rainbow(100,start=0.6,end=1.0),
+                     xlab="xlab",
+                     ylab="ylab")
+    })
+    
     output$plot1=renderPlot({
-        testImg = readPNG(system.file("img", "test.png", package="png"))
-        image(x=1:100,
-              y=1:100,
-              z=matrix(rnorm(10000,mean=5,sd=1),nrow=100,ncol=100),
-              col=rainbow(100,start=0,end=0.2),
-              xlab="xlab",
-              ylab="ylab")
-        par(new=TRUE)
-        image(x=1:20,
-              y=1:20,
-              z=matrix(c(1,NA),nrow=20,ncol=20),
-              col=rainbow(100,start=0.4,end=0.6),
-              ann=F,
-              xaxt="n",
-              yaxt="n")
-        #magplot(c(50,70), c(50,70), type='l', xlab='', ylab='', labels=c(F,F))
+        
+        # output back image
+        getBackground()
+
+        if(!is.null(input$click1)) {
+            
+            # output ovals
+            par(new=TRUE)
+            image(x=1:200,
+                  y=1:200,
+                  z=matrix(c(1,NA,NA,NA),nrow=200,ncol=200),
+                  col=rainbow(100,start=(input$click1$x/200),end=1.0),
+                  ann=F,
+                  xaxt="n",
+                  yaxt="n")
+        }
     })
     
     observe({
