@@ -30,7 +30,6 @@ shinyUI(fluidPage(id="main-page",
     # Main Content #
     ################
     
-    plotOutput(outputId="plot1",width=489,height=532,clickId="click1"),
-    imageOutput(outputId="image1",width=400,height=400)
+    plotOutput(outputId="plot1",clickId="click1",width=500,height=500)
     
 ))

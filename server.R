@@ -6,6 +6,7 @@ library(magicaxis)
 shinyServer(function(input, output, session) {
     
     output$plot1=renderPlot({
+        testImg = readPNG(system.file("img", "test.png", package="png"))
         image(x=1:100,
               y=1:100,
               z=matrix(rnorm(10000,mean=5,sd=1),nrow=100,ncol=100),
