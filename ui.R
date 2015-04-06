@@ -4,22 +4,8 @@ shinyUI(fluidPage(id="main-page",
         tags$title("Cutout Tool"),
         #tags$link(rel="shortcut icon", href="favicon.ico"),
         tags$style(HTML("
-#image1 {
-    position:absolute;
-    top:128px;
-    left:74px;
-    pointer-events:none;
-}
-#plot1 img {
-    -moz-user-select: none;
-    -webkit-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-
-    -webkit-user-drag: none;
-    user-drag: none;
-}
-                        "))
+                        ")),
+        tags$script(src="cutout.js")
     ),
     
     # title #
@@ -30,6 +16,15 @@ shinyUI(fluidPage(id="main-page",
     # Main Content #
     ################
     
-    plotOutput(outputId="plot1",clickId="click1",width=500,height=500)
+    sidebarLayout(
+        sidebarPanel(
+            h4("Ovals"),
+            actionButton(inputId="testbutton1", label="Test button")
+        ),
+        mainPanel(
+            tags$canvas(id="canvas1",width=420,height=420)
+        )
+    ),
+    imageOutput(outputId="image1",width=420,height=420)
     
 ))

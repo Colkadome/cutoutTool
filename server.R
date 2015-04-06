@@ -1,85 +1,40 @@
 library(png)
+library(base64enc)
 library(FITSio)
 library(astro)
 
-ovals = list()
-c(ovals,
-  list(
-      "x"=20,
-      "y"=20,
-      "raX"=20,
-      "raY"=20,
-      "rot"=0.4
-  )
-)
-
 shinyServer(function(input, output, session) {
     
-    getBackground = reactive({
-        testImg = readPNG("www/test2.png")
-        pixels = testImg[,,1] # get red pixels?
-        return = pixels
-    })
+    values = reactiveValues(img="www/test2.png")
     
-    output$plot1=renderPlot({
+    # Sets the background image.
+    # Should be reactive to the PNG string.
+    setBackground = observe({
         
-        # output back image
-        bgrnd = getBackground()
-        ovals = matrix(c(1,0,0,0),nrow=200,ncol=200)
-        pixels = bgrnd
-        pixels[ovals>0] = 1
+        # read pixels (likely from somewhere!)
+        pixels = readPNG("www/test2.png")
         
-        scale = 0
-        if(!is.null(input$click1$x)) {
-            scale = input$click1$x/200
-        }
+        # write to temporary file
+        outfile = tempfile(fileext = ".png")
+        writePNG(pixels, target = outfile)
         
-        image(x=1:200,
-              y=1:200,
-              z=pixels,
-              col=rainbow(100,start=scale,end=1.0),
-              xlab="xlab",
-              ylab="ylab")
-    })
-    
-    observe({
-        print(paste("mouse:",input$click1$x,input$click1$y))
-    })
-    
-#     output$image1 <- renderImage({
-#         width = 400
-#         height = 400
-#         outfile = tempfile(fileext = ".png")
-#         
-#         # Generate the image and write it to file
-#         pic = drawCircle(input$click1$x,input$click1$y, 400, 400, 10)
-#         
-#         writePNG(pic, target = outfile)
-#         list(src = outfile,
-#              contentType = "image/png",
-#              width = width,
-#              height = height,
-#              alt = "This is alternate text")
-#         
-#     }, deleteFile = TRUE)
-    
-})
+        # get uri string from file
+        uri = dataURI(
+            file=outfile,
+            mime="image/png")
+        # URI CORRUPT??
+        
+        # delete temporary file
+        unlink(outfile)
 
-# drawCircle = function(xC,yC,w,h,radius) {
-#     # PIXEL -> UNITS CONVERSION
-#     x = xC * 4
-#     y = yC * 4
-#     
-#     # init pixel matrix
-#     yA = rep(h:1,w)
-#     xA = c()
-#     for (i in 1:h) {
-#         xA = c(xA, rep(i,w))
-#     }
-#     
-#     pic = array(0,c(h,w,2))
-#     pic[,,2] = ((x-xA)^2 + (y-yA)^2 < radius^2) * 0.4
-#     pic[floor(h-y),,2] = 0.4;
-#     pic[,floor(x),2] = 0.4;
-#     return(pic)
-# }
+        # send uri to javascript canvas (SEND WIDTH AND HEIGHT DATA TOO)
+        session$sendCustomMessage(
+            type = "setImage",
+            message = uri
+        )
+    })
+    
+    getOvals = function() {
+        
+    }
+})
