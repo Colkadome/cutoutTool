@@ -3,8 +3,7 @@ shinyUI(fluidPage(id="main-page",
     tags$head(
         tags$title("Cutout Tool"),
         #tags$link(rel="shortcut icon", href="favicon.ico"),
-        tags$style(HTML("
-                        ")),
+        tags$link(rel="stylesheet", type = "text/css", href = "cutout.css"),
         tags$script(src="cutout.js")
     ),
     

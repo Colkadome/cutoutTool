@@ -8,13 +8,16 @@ $(function() {
     var canvas = document.getElementById("canvas1");
     var ctx = canvas.getContext("2d");
 
-    // Set properties for high DPI canvas
+    // set canvas properties
     var WIDTH = 420;
     var HEIGHT = 420;
     canvas.style.width = WIDTH + "px";
     canvas.style.height = HEIGHT + "px";
-    canvas.width = WIDTH * 2;
-    canvas.height = HEIGHT * 2;
+    
+    // Set properties for high DPI canvas (1 = regular, 2 = high)
+    var DPI = 1;
+    canvas.width = WIDTH * DPI;
+    canvas.height = HEIGHT * DPI;
 
     // INIT PROGRAM //
     //////////////////
@@ -163,8 +166,8 @@ $(function() {
 
     // draw to the canvas
     function draw() {
-        ctx.clearRect (0,0,canvas.width,canvas.height);
-        ctx.drawImage(img,0,0,img.width*2,img.height*2);    // *2 for DPI thing
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img, 0, 0, img.width, img.height);
         for(var i=0;i<ovals.length;i++){
             ovals[i].draw();
         }
@@ -203,8 +206,8 @@ $(function() {
         e.preventDefault();
         var left = $(this).offset().left;
         var top = $(this).offset().top;
-        var x = (e.pageX-left) * 2;
-        var y = (e.pageY-top) * 2;
+        var x = (e.pageX-left) * DPI;
+        var y = (e.pageY-top) * DPI;
         console.log("mouse down:",x,y);
         for(var i=0;i<ovals.length;i++) {
             var it = ovals[i].click(x,y);
@@ -214,15 +217,15 @@ $(function() {
         }
         $(window).mousemove(function(e) {
             click.isDragging = true;
-            var x = (e.pageX-left) * 2;
-            var y = (e.pageY-top) * 2;
+            var x = (e.pageX-left) * DPI;
+            var y = (e.pageY-top) * DPI;
             click.item.drag(click.item.targ, x, y);
             draw();
         });
     })
     .mouseup(function(e) {
-        var x = (e.pageX-$(this).offset().left) * 2;
-        var y = (e.pageY-$(this).offset().top) * 2;
+        var x = (e.pageX-$(this).offset().left) * DPI;
+        var y = (e.pageY-$(this).offset().top) * DPI;
         var wasDragging = click.isDragging;
         click.isDragging = false;
         $(window).unbind("mousemove");
