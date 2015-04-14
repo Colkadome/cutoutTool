@@ -9,10 +9,10 @@ shinyServer(function(input, output, session) {
     
     # Sets the background image.
     # Should be reactive to the PNG string.
-    setBackground = observe({
+    observe({
         
         # read pixels (likely from somewhere!)
-        pixels = readPNG("www/test2.png")
+        pixels = readPNG(values$img)
         
         # write to temporary file
         outfile = tempfile(fileext = ".png")
@@ -29,12 +29,12 @@ shinyServer(function(input, output, session) {
 
         # send uri to javascript canvas (SEND WIDTH AND HEIGHT DATA TOO)
         session$sendCustomMessage(
-            type = "setImage",
-            message = uri
+            type = "custom_setImage",
+            message = list("src"=uri)
         )
     })
     
-    getOvals = function() {
-        
-    }
+    observe({
+        print(input$ovals)
+    })
 })

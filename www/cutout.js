@@ -1,4 +1,6 @@
 
+// ADD CROSSES
+
 $(function() {
 
     // INIT CANVAS //
@@ -26,72 +28,92 @@ $(function() {
     var ovals = [];
     var img = new Image();
 
-    // get data
-    addOval();
-
     // SERVER FUNCTIONS //
     //////////////////////
 
-    // get the ovals (possibly tied to server)
-    function addOval() {
-        createOval();
-        draw();
-    }
+    // create an oval
+    Shiny.addCustomMessageHandler("custom_addOvals", function(m) {
+        console.log("addOvals");
+        for (var i=0; i<m.length; i++) {
+            createOval(m[i]);
+        }
+        updateParams();
+    });
 
+    // set the background image
     function setImage(src) {
         img.onload = function() {
             draw();                 // img.onload DOES NOT WORK ON FIREFOX OR SAFARI!!!
         }
         img.src = src;
     }
-    Shiny.addCustomMessageHandler("setImage", function(src) {
-        setImage(src);
+    Shiny.addCustomMessageHandler("custom_setImage", function(m) {
+        console.log("setImage");
+        setImage(m.src);
     });
-
+    
+    // TODO: Add pixel to RA/dec conversion!!
+    function updateShinyOvals() {
+        params = [];
+        for (var i=0; i<ovals.length; i++) {
+            params.push(ovals[i].getParams());
+        }
+        Shiny.onInputChange("ovals", params);
+    }
+    
     // OVAL FUNCTIONS //
     ////////////////////
 
     // add params!
-    function createOval() {
+    function createOval(params) {
+        
         var oval = {};
-        oval.p1 = {x:60,y:20};
-        oval.p2 = {x:60,y:100};
-        oval.p3 = {x:0,y:0};
-        oval.radB = 40;
+        if (params == null) {
+            oval.p1 = {x:60,y:20};
+            oval.p2 = {x:60,y:100};
+            oval.p3 = {x:0,y:0};
+            oval.radB = 40;
+        }
+        else {
+            oval.p1 = {x:params.centre.x - (params.radA * Math.sin(params.rot)),
+                y:params.centre.y - (params.radA * Math.cos(params.rot))};
+            oval.p2 = {x:params.centre.x + (params.radA * Math.sin(params.rot)),
+                y:params.centre.y + (params.radA * Math.cos(params.rot))};
+            oval.p3 = {x:0,y:0};
+            oval.radB = 40;
+        }
         oval.color = "#FF0000";
 
         oval.draw = function() {
             // get oval params
-            var x = (this.p1.x + this.p2.x) / 2;    // centre X
-            var y = (this.p1.y + this.p2.y) / 2;    // centre Y
-            var radA = Math.sqrt(Math.pow(this.p1.x-this.p2.x, 2) + Math.pow(this.p1.y-this.p2.y, 2)) / 2;  // radius A
-            var radB = this.radB;   // radius B
-            var rot = Math.atan((this.p1.y-this.p2.y)/(this.p1.x-this.p2.x)); // angle (radians)
+            var p = this.getParams();
 
             // Draw the oval
             ctx.beginPath();
-            ctx.ellipse(x,y,radA,radB,rot,0,2*Math.PI);
+            ctx.ellipse(p.centre.x,p.centre.y,p.radA,p.radB,p.rot,0,2*Math.PI);
             ctx.strokeStyle = this.color;
             ctx.lineWidth = 2;
             ctx.stroke();
 
             // Draw radius line
             ctx.beginPath();
-            ctx.moveTo(x,y);
+            ctx.moveTo(p.centre.x,p.centre.y);
             ctx.lineTo(this.p3.x,this.p3.y);
             ctx.strokeStyle = this.color;
             ctx.lineWidth = 2;
             ctx.stroke();
 
             // Draw the squares
-            drawSquare(this.p1.x,this.p1.y,10,"#00CCFF");
-            drawSquare(this.p2.x,this.p2.y,10,"#00CCFF");
-            drawSquare(this.p3.x,this.p3.y,10,"#00CC00");
+            var size = 8;
+            drawSquare(this.p1.x,this.p1.y,size,"#00CCFF");
+            drawSquare(this.p2.x,this.p2.y,size,"#00CCFF");
+            drawSquare(this.p3.x,this.p3.y,size,"#00CC00");
         }
         oval.click = function(xM, yM) {
 
             var b = 12; // bounds
             if(Math.abs(this.p1.x-xM)<b && Math.abs(this.p1.y-yM)<b) {
+                selectOval(this);
                 return {targ:this,
                         drag:function(o, xM, yM) {
                             o.p1.x = xM;
@@ -103,6 +125,7 @@ $(function() {
                        };
             }
             if(Math.abs(this.p2.x-xM)<b && Math.abs(this.p2.y-yM)<b) {
+                selectOval(this);
                 return {targ:this,
                         drag:function(o, xM, yM) {
                             o.p2.x = xM;
@@ -114,6 +137,7 @@ $(function() {
                        };
             }
             if(Math.abs(this.p3.x-xM)<b && Math.abs(this.p3.y-yM)<b) {
+                selectOval(this);
                 return {targ:this,
                         drag:function(o, xM, yM) {
                             o.p3.x = xM;
@@ -138,14 +162,35 @@ $(function() {
             this.p3.x = x + (Math.sin(rot) * this.radB);
             this.p3.y = y + (-Math.cos(rot) * this.radB);
         }
+        oval.getParams = function() {
+            var params = {};
+            params.centre = {x: (this.p1.x + this.p2.x) / 2, y: (this.p1.y + this.p2.y) / 2}
+            params.radA = Math.sqrt(Math.pow(this.p1.x-this.p2.x, 2) + Math.pow(this.p1.y-this.p2.y, 2)) / 2;
+            params.radB = this.radB;
+            params.rot = Math.atan((this.p1.y-this.p2.y)/(this.p1.x-this.p2.x));
+            return params;
+        }
         oval.updateP3();
+        $("#oval_list li").eq(ovals.length).before('<li style="color:'+oval.color+';">Oval <button type="button" class="btn btn-default remove-oval" aria-label="Left Align"><span class="glyphicon glyphicon-minus" aria-hidden="true"></span></button></li>');
         ovals.push(oval);
-        // add to R list somewhere here
+        draw();
+        return oval;
     }
-
+    
+    var lastSelected = 0;
+    function selectOval(o) {
+        $("#oval_list li").eq(lastSelected).css("background-color","none");
+        lastSelected = ovals.indexOf(o);
+        if(lastSelected > -1) {
+            $("#oval_list li").eq(lastSelected).css("background-color","#DDDDDD");
+        }
+    }
+    
+    // delete an oval of index i
     function deleteOval(i) {
+        $("#oval_list li").eq(i).remove();
         ovals.splice(i, 1);
-        // remove from R list somewhere
+        draw();
     }
 
     // DRAW FUNCTIONS //
@@ -167,7 +212,7 @@ $(function() {
     // draw to the canvas
     function draw() {
         ctx.clearRect(0,0,canvas.width,canvas.height);
-        ctx.drawImage(img, 0, 0, img.width, img.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         for(var i=0;i<ovals.length;i++){
             ovals[i].draw();
         }
@@ -239,4 +284,17 @@ $(function() {
         }
         click.item = defaultItem();
     });
+    
+    // OVAL TABLE AND BUTTONS //
+    ////////////////////////////
+
+    $("#add_oval").click(function(){
+        createOval();
+    })
+    $('#oval_list').on('click', 'li .remove-oval', function() {
+        deleteOval($('#oval_list li .remove-oval').index($(this)));
+    });
+    $("#save_ovals").click(function(){
+        updateShinyOvals();
+    })
 });

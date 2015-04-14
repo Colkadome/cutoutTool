@@ -18,7 +18,16 @@ shinyUI(fluidPage(id="main-page",
     sidebarLayout(
         sidebarPanel(
             h4("Ovals"),
-            actionButton(inputId="testbutton1", label="Test button")
+            tags$ul(id="oval_list",
+                    tags$li(
+                        tags$button(id="add_oval", type="button", class="btn btn-default",
+                                    span(class="glyphicon glyphicon-plus", "Add")
+                                    )
+                        )
+                    ),
+            tags$button(id="save_ovals", type="button", class="btn btn-default",
+                        span("Save Ovals")
+                        )
         ),
         mainPanel(
             tags$canvas(id="canvas1",width=420,height=420)
