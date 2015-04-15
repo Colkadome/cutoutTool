@@ -1,6 +1,4 @@
 
-// ADD CROSSES
-
 $(function() {
 
     // INIT CANVAS //
@@ -25,17 +23,18 @@ $(function() {
     //////////////////
 
     // Object storage
-    var ovals = [];
+    var ellipses = [];
+    var points = [];
     var img = new Image();
 
     // SERVER FUNCTIONS //
     //////////////////////
 
-    // create an oval
-    Shiny.addCustomMessageHandler("custom_addOvals", function(m) {
-        console.log("addOvals");
+    // create an ellipse
+    Shiny.addCustomMessageHandler("custom_addEllipses", function(m) {
+        console.log("addEllipses");
         for (var i=0; i<m.length; i++) {
-            createOval(m[i]);
+            createEllipse(m[i]);
         }
         updateParams();
     });
@@ -52,117 +51,123 @@ $(function() {
         setImage(m.src);
     });
     
-    // TODO: Add pixel to RA/dec conversion!!
-    function updateShinyOvals() {
-        params = [];
-        for (var i=0; i<ovals.length; i++) {
-            params.push(ovals[i].getParams());
+    function updateShinyItems() {
+        ellipseParams = [];
+        for (var i=0; i<ellipses.length; i++) {
+            ellipseParams.push(ellipses[i].getParams());
         }
-        Shiny.onInputChange("ovals", params);
+        pointParams = [];
+        for (var i=0; i<points.length; i++) {
+            pointParams.push(points[i].getParams());
+        }
+        result = {ellipses:ellipseParams, points:pointParams};
+        Shiny.onInputChange("items", result);
     }
     
-    // OVAL FUNCTIONS //
-    ////////////////////
+    // ELLIPSE FUNCTIONS //
+    ///////////////////////
 
     // add params!
-    function createOval(params) {
-        
-        var oval = {};
+    function createEllipse(params) {
+        var ellipse = {};
         if (params == null) {
-            oval.p1 = {x:60,y:20};
-            oval.p2 = {x:60,y:100};
-            oval.p3 = {x:0,y:0};
-            oval.radB = 40;
+            // no params, a default ellipse is made
+            ellipse.p1 = {x:60,y:20};
+            ellipse.p2 = {x:60,y:100};
+            ellipse.p3 = {x:0,y:0};
+            ellipse.radB = 40;
         }
         else {
-            oval.p1 = {x:params.centre.x - (params.radA * Math.sin(params.rot)),
+            // params were specified, use the params
+            ellipse.p1 = {x:params.centre.x - (params.radA * Math.sin(params.rot)),
                 y:params.centre.y - (params.radA * Math.cos(params.rot))};
-            oval.p2 = {x:params.centre.x + (params.radA * Math.sin(params.rot)),
+            ellipse.p2 = {x:params.centre.x + (params.radA * Math.sin(params.rot)),
                 y:params.centre.y + (params.radA * Math.cos(params.rot))};
-            oval.p3 = {x:0,y:0};
-            oval.radB = 40;
+            ellipse.p3 = {x:0,y:0};
+            ellipse.radB = 40;
         }
-        oval.color = "#FF0000";
+        ellipse.centreMode = true;
+        ellipse.color = "#FF0000";
 
-        oval.draw = function() {
-            // get oval params
+        ellipse.draw = function() {
+            // get ellipse params
             var p = this.getParams();
 
-            // Draw the oval
+            // Draw the ellipse
             ctx.beginPath();
-            ctx.ellipse(p.centre.x,p.centre.y,p.radA,p.radB,p.rot,0,2*Math.PI);
+            ctx.ellipse(toCX(p.centre.x),toCY(p.centre.y),toCS(p.radA),toCS(p.radB),p.rot,0,2*Math.PI);
             ctx.strokeStyle = this.color;
             ctx.lineWidth = 2;
             ctx.stroke();
 
             // Draw radius line
             ctx.beginPath();
-            ctx.moveTo(p.centre.x,p.centre.y);
-            ctx.lineTo(this.p3.x,this.p3.y);
+            ctx.moveTo(toCX(p.centre.x),toCY(p.centre.y));
+            ctx.lineTo(toCX(this.p3.x),toCY(this.p3.y));
             ctx.strokeStyle = this.color;
             ctx.lineWidth = 2;
             ctx.stroke();
 
             // Draw the squares
             var size = 8;
-            drawSquare(this.p1.x,this.p1.y,size,"#00CCFF");
-            drawSquare(this.p2.x,this.p2.y,size,"#00CCFF");
-            drawSquare(this.p3.x,this.p3.y,size,"#00CC00");
+            drawSquare(toCX(this.p1.x),toCY(this.p1.y),size,"#00CCFF");
+            drawSquare(toCX(this.p2.x),toCY(this.p2.y),size,"#00CCFF");
+            drawSquare(toCX(this.p3.x),toCY(this.p3.y),size,"#00CC00");
         }
-        oval.click = function(xM, yM) {
+        ellipse.click = function(xM, yM) {
 
             var b = 12; // bounds
-            if(Math.abs(this.p1.x-xM)<b && Math.abs(this.p1.y-yM)<b) {
-                selectOval(this);
-                return {targ:this,
-                        drag:function(o, xM, yM) {
-                            o.p1.x = xM;
-                            o.p1.y = yM;
+            o = this; // reference to self
+            if(Math.abs(toCX(this.p1.x)-xM)<b && Math.abs(toCY(this.p1.y)-yM)<b) {
+                selectEllipse(this);
+                return {drag:function(xM, yM, cX, cY) {
+                            o.p1.x = toIX(xM);
+                            o.p1.y = toIY(yM);
                             o.updateP3();
                         },
-                        rel:function(o, mX, mY){},
-                        up:function(o, mX, mY){}
+                        rel:function(mX, mY){},
+                        up:function(mX, mY){}
                        };
             }
-            if(Math.abs(this.p2.x-xM)<b && Math.abs(this.p2.y-yM)<b) {
-                selectOval(this);
-                return {targ:this,
-                        drag:function(o, xM, yM) {
-                            o.p2.x = xM;
-                            o.p2.y = yM;
+            if(Math.abs(toCX(this.p2.x)-xM)<b && Math.abs(toCY(this.p2.y)-yM)<b) {
+                selectEllipse(this);
+                return {drag:function(xM, yM, cX, cY) {
+                            o.p2.x = toIX(xM);
+                            o.p2.y = toIY(yM);
                             o.updateP3();
                         },
-                        rel:function(o, mX, mY){},
-                        up:function(o, mX, mY){}
+                        rel:function(mX, mY){},
+                        up:function(mX, mY){}
                        };
             }
-            if(Math.abs(this.p3.x-xM)<b && Math.abs(this.p3.y-yM)<b) {
-                selectOval(this);
-                return {targ:this,
-                        drag:function(o, xM, yM) {
-                            o.p3.x = xM;
-                            o.p3.y = yM;
+            if(Math.abs(toCX(this.p3.x)-xM)<b && Math.abs(toCY(this.p3.y)-yM)<b) {
+                selectEllipse(this);
+                return {drag:function(xM, yM, cX, cY) {
+                            var iX = toIX(xM);
+                            var iY = toIY(yM);
+                            o.p3.x = iX;
+                            o.p3.y = iY;
                             // update radius
                             var x = (o.p1.x + o.p2.x) / 2;    // centre X
                             var y = (o.p1.y + o.p2.y) / 2;    // centre Y
-                            o.radB = Math.sqrt(Math.pow(x-xM,2)+Math.pow(y-yM,2));
+                            o.radB = Math.sqrt(Math.pow(x-iX,2)+Math.pow(y-iY,2));
                         },
-                        rel:function(o, mX, mY){
+                        rel:function(mX, mY){
                             o.updateP3();
                         },
-                        up:function(o, mX, mY){}
+                        up:function(mX, mY){}
                        };
             }
             return null;
         }
-        oval.updateP3 = function() {
+        ellipse.updateP3 = function() {
             var x = (this.p1.x + this.p2.x) / 2;    // centre X
             var y = (this.p1.y + this.p2.y) / 2;    // centre Y
             var rot = Math.atan((this.p1.y-this.p2.y)/(this.p1.x-this.p2.x));
             this.p3.x = x + (Math.sin(rot) * this.radB);
             this.p3.y = y + (-Math.cos(rot) * this.radB);
         }
-        oval.getParams = function() {
+        ellipse.getParams = function() {
             var params = {};
             params.centre = {x: (this.p1.x + this.p2.x) / 2, y: (this.p1.y + this.p2.y) / 2}
             params.radA = Math.sqrt(Math.pow(this.p1.x-this.p2.x, 2) + Math.pow(this.p1.y-this.p2.y, 2)) / 2;
@@ -170,27 +175,89 @@ $(function() {
             params.rot = Math.atan((this.p1.y-this.p2.y)/(this.p1.x-this.p2.x));
             return params;
         }
-        oval.updateP3();
-        $("#oval_list li").eq(ovals.length).before('<li style="color:'+oval.color+';">Oval <button type="button" class="btn btn-default remove-oval" aria-label="Left Align"><span class="glyphicon glyphicon-minus" aria-hidden="true"></span></button></li>');
-        ovals.push(oval);
-        draw();
-        return oval;
+        ellipse.updateP3();
+        $("#ellipse_list li").eq(ellipses.length).before('<li style="color:'+ellipse.color+';">Ellipse <button type="button" class="btn btn-default remove-ellipse"><span class="glyphicon glyphicon-minus"></span></button></li>');
+        ellipses.push(ellipse);
+        addClickable(ellipse);
+        return ellipse;
     }
     
-    var lastSelected = 0;
-    function selectOval(o) {
-        $("#oval_list li").eq(lastSelected).css("background-color","none");
-        lastSelected = ovals.indexOf(o);
-        if(lastSelected > -1) {
-            $("#oval_list li").eq(lastSelected).css("background-color","#DDDDDD");
+    // select an ellipse using a reference
+    var lastSel_Ellipse = 0;
+    function selectEllipse(o) {
+        $("#ellipse_list li").eq(lastSel_Ellipse).css("background-color","none");
+        lastSel_Ellipse = ellipses.indexOf(o);
+        if(lastSel_Ellipse > -1) {
+            $("#ellipse_list li").eq(lastSel_Ellipse).css("background-color","#DDDDDD");
         }
     }
     
-    // delete an oval of index i
-    function deleteOval(i) {
-        $("#oval_list li").eq(i).remove();
-        ovals.splice(i, 1);
-        draw();
+    // delete an ellipse of index i
+    function removeEllipse(i) {
+        $("#ellipse_list li").eq(i).remove();
+        console.log(i);
+        removeClickable(ellipses[i]);
+        ellipses.splice(i, 1);
+    }
+    
+    // POINT FUNCTIONS //
+    /////////////////////
+    
+    function createPoint(params) {
+        var point = {};
+        if (params == null) {
+            // no params, a default point is made
+            point.pos = {x:60,y:20};
+        }
+        else {
+            // params were specified, use the params
+            point.pos = {x:params.x, y:params.y};
+        }
+        point.color = "#FF0000";
+        point.draw = function() {
+            // Draw the cross
+            drawCross(toCX(this.pos.x),toCY(this.pos.y), 6, point.color);
+        }
+        point.click = function(xM, yM) {
+            var b = 8; // bounds
+            o = this; // reference to self
+            if(Math.abs(toCX(this.pos.x)-xM)<b && Math.abs(toCY(this.pos.y)-yM)<b) {
+                selectPoint(this);
+                return {drag:function(xM, yM, cX, cY) {
+                            o.pos.x = toIX(xM);
+                            o.pos.y = toIY(yM);
+                        },
+                        rel:function(mX, mY){},
+                        up:function(mX, mY){}
+                       };
+            }
+            return null;
+        }
+        point.getParams = function() {
+            return {x:this.pos.x, y:this.pos.y};
+        }
+        $("#point_list li").eq(points.length).before('<li style="color:'+point.color+';">Point <button type="button" class="btn btn-default remove-point"><span class="glyphicon glyphicon-minus"></span></button></li>');
+        points.push(point);
+        addClickable(point);
+        return point;
+    }
+    
+    // select a point using a reference
+    var lastSel_Point = 0;
+    function selectPoint(o) {
+        $("#point_list li").eq(lastSel_Point).css("background-color","none");
+        lastSel_Point = points.indexOf(o);
+        if(lastSel_Point > -1) {
+            $("#point_list li").eq(lastSel_Point).css("background-color","#DDDDDD");
+        }
+    }
+    
+    // delete a point of index i
+    function removePoint(i) {
+        $("#point_list li").eq(i).remove();
+        console.log(i);
+        removeClickable(points[i]);
+        points.splice(i, 1);
     }
 
     // DRAW FUNCTIONS //
@@ -208,38 +275,88 @@ $(function() {
         ctx.lineWidth = 2;
         ctx.stroke();
     }
-
+    
+    function drawCross(x, y, size, color) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        
+        ctx.beginPath();
+        ctx.moveTo(x-size,y-size);
+        ctx.lineTo(x+size,y+size);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(x-size,y+size);
+        ctx.lineTo(x+size,y-size);
+        ctx.stroke();
+    }
+    
+    // canvas position/scale
+    var canvasP = {
+        scale: 1.0,
+        xDisp: 0.0,
+        yDisp: 0.0
+    };
+    
+    // convert variables to Canvas space
+    function toCX(x) {
+        return (x + canvasP.xDisp) * canvasP.scale;
+    }
+    function toCY(y) {
+        return (y + canvasP.yDisp) * canvasP.scale;
+    }
+    function toCS(l) {
+        return l * canvasP.scale;
+    }
+    
+    // convert variables to Image space
+    function toIX(x) {
+        return (x / canvasP.scale) - canvasP.xDisp;
+    }
+    function toIY(y) {
+        return (y / canvasP.scale) - canvasP.yDisp;
+    }
+    function toIS(l) {
+        return l / canvasP.scale;
+    }
+    
     // draw to the canvas
     function draw() {
         ctx.clearRect(0,0,canvas.width,canvas.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        for(var i=0;i<ovals.length;i++){
-            ovals[i].draw();
+        ctx.drawImage(img, toCX(0), toCY(0), toCS(img.width), toCS(img.height));
+        for(var i=0;i<ellipses.length;i++){
+            ellipses[i].draw();
         }
-    }
-
-    // gets a nice random color (FIX THS)
-    function getRandomColor() {
-
-        var color = '#';
-        for (var i = 0; i < 3; i++) {
-            var c = Math.floor(Math.random() * 128);
-            c += 64;
-            color += ("00" + c.toString(16)).slice(-2);
+        for(var i=0;i<points.length;i++){
+            points[i].draw();
         }
-
-        return color;
     }
 
     // CLICK FUNCTIONS //
     /////////////////////
 
+    // list of items that can be clicked/dragged
+    var clickable = [];
+    function addClickable(o) {
+        clickable.push(o);
+    }
+    function removeClickable(o) {
+        i = clickable.indexOf(o);
+        console.log("click"+i);
+        if(i > -1) {
+            clickable.splice(i, 1);
+        }
+    }
+
+    // the default things to do on clicking/dragging
     function defaultItem() {
         var item = {};
-        item.targ = null;
-        item.drag = function(targ, mX, mY) {};
-        item.rel = function(targ, mX, mY) {};
-        item.up = function(targ, mX, mY) {};
+        item.drag = function(mX, mY, cX, cY) {
+            canvasP.xDisp += toIS(cX);
+            canvasP.yDisp += toIS(cY);
+        };
+        item.rel = function(mX, mY) {};
+        item.up = function(mX, mY) {};
         return item;
     }
 
@@ -253,48 +370,82 @@ $(function() {
         var top = $(this).offset().top;
         var x = (e.pageX-left) * DPI;
         var y = (e.pageY-top) * DPI;
-        console.log("mouse down:",x,y);
-        for(var i=0;i<ovals.length;i++) {
-            var it = ovals[i].click(x,y);
+        console.log("mouse down:", x, y);
+        console.log("Image space:", toIX(x), toIY(y));
+        // find item that has been clicked
+        for(var i=0;i<clickable.length;i++) {
+            var it = clickable[i].click(x, y);
             if(it != null) {
                 click.item = it;
+                break;
             }
         }
+        var lastX = x;
+        var lastY = y;
+        draw();
         $(window).mousemove(function(e) {
             click.isDragging = true;
             var x = (e.pageX-left) * DPI;
             var y = (e.pageY-top) * DPI;
-            click.item.drag(click.item.targ, x, y);
+            click.item.drag(x, y, x-lastX, y-lastY);
+            lastX = x;
+            lastY = y;
             draw();
         });
     })
     .mouseup(function(e) {
-        var x = (e.pageX-$(this).offset().left) * DPI;
-        var y = (e.pageY-$(this).offset().top) * DPI;
-        var wasDragging = click.isDragging;
-        click.isDragging = false;
+        var x = toCX((e.pageX-$(this).offset().left) * DPI);
+        var y = toCY((e.pageY-$(this).offset().top) * DPI);
         $(window).unbind("mousemove");
-        if (!wasDragging) {
-            console.log("mouse up:",x,y);
+        if (!click.isDragging) {
+            //console.log("mouse up:",x ,y);
+            click.item.up(x, y);
         }
         else {
             console.log("mouse release:",x,y);
-            click.item.rel(click.item.targ, x, y);
-            draw();
+            click.item.rel(x, y);
         }
+        click.isDragging = false;
         click.item = defaultItem();
+        draw();
     });
     
-    // OVAL TABLE AND BUTTONS //
-    ////////////////////////////
+    // BUTTONS ON SCREEN //
+    ///////////////////////
 
-    $("#add_oval").click(function(){
-        createOval();
+    $("#add_ellipse").click(function(){
+        createEllipse();
+        draw();
     })
-    $('#oval_list').on('click', 'li .remove-oval', function() {
-        deleteOval($('#oval_list li .remove-oval').index($(this)));
+    $('#ellipse_list').on('click', 'li .remove-ellipse', function() {
+        removeEllipse($('#ellipse_list li .remove-ellipse').index($(this)));
+        draw();
     });
-    $("#save_ovals").click(function(){
-        updateShinyOvals();
+    $("#add_point").click(function(){
+        createPoint();
+        draw();
+    })
+    $('#point_list').on('click', 'li .remove-point', function() {
+        removePoint($('#point_list li .remove-point').index($(this)));
+        draw();
+    });
+    $("#save_items").click(function(){
+        updateShinyItems();
+    })
+    $("#zoom_in").click(function(){
+        /*
+        var xM = canvasP.xDisp - toPS(canvas.width/2);
+        var yM = canvasP.yDisp - toPS(canvas.height/2);
+        var diff = (canvasP.scale + 0.2) / canvasP.scale;
+        canvasP.xDisp = (xM * diff) + toPS(canvas.width/2);
+        canvasP.yDisp = (yM * diff) + toPS(canvas.height/2);
+        console.log(xM, canvasP.xDisp);
+        */
+        canvasP.scale += 0.2;
+        draw();
+    })
+    $("#zoom_out").click(function(){
+        canvasP.scale -= 0.2;
+        draw();
     })
 });

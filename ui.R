@@ -17,20 +17,34 @@ shinyUI(fluidPage(id="main-page",
     
     sidebarLayout(
         sidebarPanel(
-            h4("Ovals"),
-            tags$ul(id="oval_list",
+            h4("Ellipses"),
+            tags$ul(id="ellipse_list",
                     tags$li(
-                        tags$button(id="add_oval", type="button", class="btn btn-default",
+                        tags$button(id="add_ellipse", type="button", class="btn btn-default",
                                     span(class="glyphicon glyphicon-plus", "Add")
                                     )
                         )
                     ),
-            tags$button(id="save_ovals", type="button", class="btn btn-default",
-                        span("Save Ovals")
+            h4("Points"),
+            tags$ul(id="point_list",
+                    tags$li(
+                        tags$button(id="add_point", type="button", class="btn btn-default",
+                                    span(class="glyphicon glyphicon-plus", "Add")
+                                    )
+                        )
+                    ),
+            tags$button(id="save_items", type="button", class="btn btn-default",
+                        span("Save Items")
                         )
         ),
         mainPanel(
-            tags$canvas(id="canvas1",width=420,height=420)
+            tags$canvas(id="canvas1",width=420,height=420),
+            tags$button(id="zoom_in", type="button", class="btn btn-default",
+                        span(class="glyphicon glyphicon-plus")
+                        ),
+            tags$button(id="zoom_out", type="button", class="btn btn-default",
+                        span(class="glyphicon glyphicon-minus")
+                        )
         )
     ),
     imageOutput(outputId="image1",width=420,height=420)

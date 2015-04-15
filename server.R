@@ -35,6 +35,6 @@ shinyServer(function(input, output, session) {
     })
     
     observe({
-        print(input$ovals)
+        print(input$items)
     })
 })
