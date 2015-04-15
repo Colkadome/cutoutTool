@@ -394,8 +394,8 @@ $(function() {
         });
     })
     .mouseup(function(e) {
-        var x = toCX((e.pageX-$(this).offset().left) * DPI);
-        var y = toCY((e.pageY-$(this).offset().top) * DPI);
+        var x = (e.pageX-$(this).offset().left) * DPI;
+        var y = (e.pageY-$(this).offset().top) * DPI;
         $(window).unbind("mousemove");
         if (!click.isDragging) {
             //console.log("mouse up:",x ,y);
