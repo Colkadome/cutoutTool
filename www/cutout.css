@@ -1,3 +1,17 @@
 #canvas1 {
     border:1px solid #000000;
 }
+
+#ellipse_list {
+    margin-top: 10px;
+}
+#ellipse_list li {
+    cursor: pointer;
+}
+
+#point_list {
+    margin-top: 10px;
+}
+#point_list li {
+    cursor: pointer;
+}

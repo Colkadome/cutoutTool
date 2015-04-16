@@ -34,6 +34,7 @@ $(function() {
     Shiny.addCustomMessageHandler("custom_addEllipses", function(m) {
         console.log("addEllipses");
         for (var i=0; i<m.length; i++) {
+            // CHECK IF POINT OR ELLIPSE?
             createEllipse(m[i]);
         }
         updateParams();
@@ -72,132 +73,154 @@ $(function() {
         var ellipse = {};
         if (params == null) {
             // no params, a default ellipse is made
-            ellipse.p1 = {x:60,y:20};
-            ellipse.p2 = {x:60,y:100};
-            ellipse.p3 = {x:0,y:0};
-            ellipse.radB = 40;
+            ellipse.pC = {x:60,y:60};
+            ellipse.pA = {x:80,y:60};
+            ellipse.pB = {x:0,y:0};
+            ellipse.radB = 20;
         }
         else {
             // params were specified, use the params
-            ellipse.p1 = {x:params.centre.x - (params.radA * Math.sin(params.rot)),
-                y:params.centre.y - (params.radA * Math.cos(params.rot))};
-            ellipse.p2 = {x:params.centre.x + (params.radA * Math.sin(params.rot)),
-                y:params.centre.y + (params.radA * Math.cos(params.rot))};
-            ellipse.p3 = {x:0,y:0};
+            ellipse.pC = {x:params.centre.x, y:params.centre.y};
+            ellipse.pA = {x:0,y:0}; // SET USING radA AND rot
+            ellipse.pB = {x:0,y:0};
             ellipse.radB = 40;
         }
         ellipse.centreMode = true;
         ellipse.color = "#FF0000";
 
         ellipse.draw = function() {
-            // get ellipse params
-            var p = this.getParams();
 
             // Draw the ellipse
             ctx.beginPath();
-            ctx.ellipse(toCX(p.centre.x),toCY(p.centre.y),toCS(p.radA),toCS(p.radB),p.rot,0,2*Math.PI);
+            ctx.ellipse(toCX(this.pC.x),toCY(this.pC.y),toCS(this.getradA()),toCS(this.radB),this.getrot(),0,2*Math.PI);
             ctx.strokeStyle = this.color;
             ctx.lineWidth = 2;
             ctx.stroke();
 
             // Draw radius line
             ctx.beginPath();
-            ctx.moveTo(toCX(p.centre.x),toCY(p.centre.y));
-            ctx.lineTo(toCX(this.p3.x),toCY(this.p3.y));
+            ctx.moveTo(toCX(this.pC.x),toCY(this.pC.y));
+            ctx.lineTo(toCX(this.pA.x),toCY(this.pA.y));
             ctx.strokeStyle = this.color;
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1;
             ctx.stroke();
 
             // Draw the squares
             var size = 8;
-            drawSquare(toCX(this.p1.x),toCY(this.p1.y),size,"#00CCFF");
-            drawSquare(toCX(this.p2.x),toCY(this.p2.y),size,"#00CCFF");
-            drawSquare(toCX(this.p3.x),toCY(this.p3.y),size,"#00CC00");
+            drawSquare(toCX(this.pC.x),toCY(this.pC.y),size,"#00CCFF");
+            drawSquare(toCX(this.pA.x),toCY(this.pA.y),size,"#00CCFF");
+            drawSquare(toCX(this.pB.x),toCY(this.pB.y),size,"#00CC00");
         }
         ellipse.click = function(xM, yM) {
 
             var b = 12; // bounds
             o = this; // reference to self
-            if(Math.abs(toCX(this.p1.x)-xM)<b && Math.abs(toCY(this.p1.y)-yM)<b) {
-                selectEllipse(this);
+            if(Math.abs(toCX(this.pC.x)-xM)<b && Math.abs(toCY(this.pC.y)-yM)<b) {
+                switchEllipse(getEllipseIndex(this));
                 return {drag:function(xM, yM, cX, cY) {
-                            o.p1.x = toIX(xM);
-                            o.p1.y = toIY(yM);
-                            o.updateP3();
+                            var ix = toIX(xM);
+                            var iy = toIY(yM);
+                            o.pA.x += ix - o.pC.x;
+                            o.pA.y += iy - o.pC.y;
+                            o.pC.x = ix;
+                            o.pC.y = iy;
+                            o.updatePB();
                         },
                         rel:function(mX, mY){},
                         up:function(mX, mY){}
                        };
             }
-            if(Math.abs(toCX(this.p2.x)-xM)<b && Math.abs(toCY(this.p2.y)-yM)<b) {
-                selectEllipse(this);
+            if(Math.abs(toCX(this.pA.x)-xM)<b && Math.abs(toCY(this.pA.y)-yM)<b) {
+                switchEllipse(getEllipseIndex(this));
                 return {drag:function(xM, yM, cX, cY) {
-                            o.p2.x = toIX(xM);
-                            o.p2.y = toIY(yM);
-                            o.updateP3();
+                            o.pA.x = toIX(xM);
+                            o.pA.y = toIY(yM);
+                            o.updatePB();
                         },
                         rel:function(mX, mY){},
                         up:function(mX, mY){}
                        };
             }
-            if(Math.abs(toCX(this.p3.x)-xM)<b && Math.abs(toCY(this.p3.y)-yM)<b) {
-                selectEllipse(this);
+            if(Math.abs(toCX(this.pB.x)-xM)<b && Math.abs(toCY(this.pB.y)-yM)<b) {
+                switchEllipse(getEllipseIndex(this));
                 return {drag:function(xM, yM, cX, cY) {
-                            var iX = toIX(xM);
-                            var iY = toIY(yM);
-                            o.p3.x = iX;
-                            o.p3.y = iY;
+                            o.pB.x = toIX(xM);
+                            o.pB.y = toIY(yM);
                             // update radius
-                            var x = (o.p1.x + o.p2.x) / 2;    // centre X
-                            var y = (o.p1.y + o.p2.y) / 2;    // centre Y
-                            o.radB = Math.sqrt(Math.pow(x-iX,2)+Math.pow(y-iY,2));
+                            o.radB = Math.sqrt(Math.pow(o.pC.x-o.pB.x,2)+Math.pow(o.pC.y-o.pB.y,2));
                         },
                         rel:function(mX, mY){
-                            o.updateP3();
+                            o.updatePB();
                         },
                         up:function(mX, mY){}
                        };
             }
             return null;
         }
-        ellipse.updateP3 = function() {
-            var x = (this.p1.x + this.p2.x) / 2;    // centre X
-            var y = (this.p1.y + this.p2.y) / 2;    // centre Y
-            var rot = Math.atan((this.p1.y-this.p2.y)/(this.p1.x-this.p2.x));
-            this.p3.x = x + (Math.sin(rot) * this.radB);
-            this.p3.y = y + (-Math.cos(rot) * this.radB);
+        ellipse.updatePB = function() {
+            var rot = Math.atan((this.pC.y-this.pA.y)/(this.pC.x-this.pA.x));
+            this.pB.x = this.pC.x + (Math.sin(rot) * this.radB);
+            this.pB.y = this.pC.y + (-Math.cos(rot) * this.radB);
+        }
+        ellipse.getradA = function() {
+            return Math.sqrt(Math.pow(this.pC.x-this.pA.x, 2) + Math.pow(this.pC.y-this.pA.y, 2));
+        }
+        ellipse.getrot = function() {
+            return Math.atan((this.pA.y-this.pC.y)/(this.pA.x-this.pC.x));
         }
         ellipse.getParams = function() {
             var params = {};
-            params.centre = {x: (this.p1.x + this.p2.x) / 2, y: (this.p1.y + this.p2.y) / 2}
-            params.radA = Math.sqrt(Math.pow(this.p1.x-this.p2.x, 2) + Math.pow(this.p1.y-this.p2.y, 2)) / 2;
+            params.centre = {x:this.pC.x, y:this.pC.y}
+            params.radA = this.getradA();
             params.radB = this.radB;
-            params.rot = Math.atan((this.p1.y-this.p2.y)/(this.p1.x-this.p2.x));
+            params.rot = this.getrot();
             return params;
         }
-        ellipse.updateP3();
-        $("#ellipse_list li").eq(ellipses.length).before('<li style="color:'+ellipse.color+';">Ellipse <button type="button" class="btn btn-default remove-ellipse"><span class="glyphicon glyphicon-minus"></span></button></li>');
+        ellipse.updatePB();
+        $("#ellipse_list").append('<li>Ellipse</li>');
         ellipses.push(ellipse);
         addClickable(ellipse);
+        switchEllipse(ellipses.length - 1);
         return ellipse;
     }
     
-    // select an ellipse using a reference
-    var lastSel_Ellipse = 0;
-    function selectEllipse(o) {
-        $("#ellipse_list li").eq(lastSel_Ellipse).css("background-color","none");
-        lastSel_Ellipse = ellipses.indexOf(o);
-        if(lastSel_Ellipse > -1) {
-            $("#ellipse_list li").eq(lastSel_Ellipse).css("background-color","#DDDDDD");
-        }
+    function getEllipseIndex(o) {
+        return ellipses.indexOf(o);
     }
     
-    // delete an ellipse of index i
+    // select an ellipse of index i
+    var lastSel_Ellipse = 0;
+    function switchEllipse(i) {
+        if(i >= 0 && i < ellipses.length) {
+            deselectEllipse(lastSel_Ellipse);
+            selectEllipse(i);
+        }
+    }
+    function selectEllipse(i) {
+        if(i >= 0 && i < ellipses.length) {
+            $("#ellipse_list li").eq(i).css("background-color","#CCFFFF");
+            ellipses[i].color = "#FF0000";
+            lastSel_Ellipse = i;
+        }
+    }
+    function deselectEllipse(i) {
+        if(i >= 0 && i < ellipses.length) {
+            $("#ellipse_list li").eq(i).css("background-color","none");
+            ellipses[i].color = "#CC0000";
+        }
+    }
     function removeEllipse(i) {
-        $("#ellipse_list li").eq(i).remove();
-        console.log(i);
-        removeClickable(ellipses[i]);
-        ellipses.splice(i, 1);
+        if(i >= 0 && i < ellipses.length) {
+            $("#ellipse_list li").eq(i).remove();
+            removeClickable(ellipses[i]);
+            ellipses.splice(i, 1);
+            if(i < ellipses.length) {
+                selectEllipse(i);
+            }
+            else {
+                selectEllipse(ellipses.length-1);
+            }
+        }
     }
     
     // POINT FUNCTIONS //
@@ -222,7 +245,7 @@ $(function() {
             var b = 8; // bounds
             o = this; // reference to self
             if(Math.abs(toCX(this.pos.x)-xM)<b && Math.abs(toCY(this.pos.y)-yM)<b) {
-                selectPoint(this);
+                switchPoint(getPointIndex(this));
                 return {drag:function(xM, yM, cX, cY) {
                             o.pos.x = toIX(xM);
                             o.pos.y = toIY(yM);
@@ -236,28 +259,50 @@ $(function() {
         point.getParams = function() {
             return {x:this.pos.x, y:this.pos.y};
         }
-        $("#point_list li").eq(points.length).before('<li style="color:'+point.color+';">Point <button type="button" class="btn btn-default remove-point"><span class="glyphicon glyphicon-minus"></span></button></li>');
+        $("#point_list").append('<li>Point</li>');
         points.push(point);
         addClickable(point);
+        switchPoint(points.length - 1);
         return point;
     }
     
-    // select a point using a reference
-    var lastSel_Point = 0;
-    function selectPoint(o) {
-        $("#point_list li").eq(lastSel_Point).css("background-color","none");
-        lastSel_Point = points.indexOf(o);
-        if(lastSel_Point > -1) {
-            $("#point_list li").eq(lastSel_Point).css("background-color","#DDDDDD");
-        }
+    function getPointIndex(o) {
+        return points.indexOf(o);
     }
     
-    // delete a point of index i
+    // select an ellipse of index i
+    var lastSel_Point = 0;
+    function switchPoint(i) {
+        if(i >= 0 && i < points.length) {
+            deselectPoint(lastSel_Point);
+            selectPoint(i);
+        }
+    }
+    function selectPoint(i) {
+        if(i >= 0 && i < points.length) {
+            $("#point_list li").eq(i).css("background-color","#CCFFFF");
+            points[i].color = "#FF0000";
+            lastSel_Point = i;
+        }
+    }
+    function deselectPoint(i) {
+        if(i >= 0 && i < points.length) {
+            $("#point_list li").eq(i).css("background-color","none");
+            points[i].color = "#CC0000";
+        }
+    }
     function removePoint(i) {
-        $("#point_list li").eq(i).remove();
-        console.log(i);
-        removeClickable(points[i]);
-        points.splice(i, 1);
+        if(i >= 0 && i < points.length) {
+            $("#point_list li").eq(i).remove();
+            removeClickable(points[i]);
+            points.splice(i, 1);
+            if(i < points.length) {
+                selectPoint(i);
+            }
+            else {
+                selectPoint(points.length-1);
+            }
+        }
     }
 
     // DRAW FUNCTIONS //
@@ -276,6 +321,7 @@ $(function() {
         ctx.stroke();
     }
     
+    // draw a cross shape
     function drawCross(x, y, size, color) {
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
@@ -291,35 +337,6 @@ $(function() {
         ctx.stroke();
     }
     
-    // canvas position/scale
-    var canvasP = {
-        scale: 1.0,
-        xDisp: 0.0,
-        yDisp: 0.0
-    };
-    
-    // convert variables to Canvas space
-    function toCX(x) {
-        return (x + canvasP.xDisp) * canvasP.scale;
-    }
-    function toCY(y) {
-        return (y + canvasP.yDisp) * canvasP.scale;
-    }
-    function toCS(l) {
-        return l * canvasP.scale;
-    }
-    
-    // convert variables to Image space
-    function toIX(x) {
-        return (x / canvasP.scale) - canvasP.xDisp;
-    }
-    function toIY(y) {
-        return (y / canvasP.scale) - canvasP.yDisp;
-    }
-    function toIS(l) {
-        return l / canvasP.scale;
-    }
-    
     // draw to the canvas
     function draw() {
         ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -330,6 +347,44 @@ $(function() {
         for(var i=0;i<points.length;i++){
             points[i].draw();
         }
+    }
+    
+    // CANVAS SPACE FUNCTIONS //
+    ////////////////////////////
+    
+    // canvas position/scale
+    var canvasP = {
+        scale: 1.0,
+        xDisp: 0.0,
+        yDisp: 0.0
+    };
+    
+    // convert variables from Image space to Canvas space
+    // convert x pos
+    function toCX(x) {
+        return (x + canvasP.xDisp) * canvasP.scale;
+    }
+    // convert y pos
+    function toCY(y) {
+        return (y + canvasP.yDisp) * canvasP.scale;
+    }
+    // convert scale
+    function toCS(l) {
+        return l * canvasP.scale;
+    }
+    
+    // convert variables from Canvas space to Image space
+    // convert x pos
+    function toIX(x) {
+        return (x / canvasP.scale) - canvasP.xDisp;
+    }
+    // convert y pos
+    function toIY(y) {
+        return (y / canvasP.scale) - canvasP.yDisp;
+    }
+    // convert scale
+    function toIS(l) {
+        return l / canvasP.scale;
     }
 
     // CLICK FUNCTIONS //
@@ -342,13 +397,12 @@ $(function() {
     }
     function removeClickable(o) {
         i = clickable.indexOf(o);
-        console.log("click"+i);
         if(i > -1) {
             clickable.splice(i, 1);
         }
     }
 
-    // the default things to do on clicking/dragging
+    // the default things to do on clicking/dragging (drag canvas)
     function defaultItem() {
         var item = {};
         item.drag = function(mX, mY, cX, cY) {
@@ -356,7 +410,9 @@ $(function() {
             canvasP.yDisp += toIS(cY);
         };
         item.rel = function(mX, mY) {};
-        item.up = function(mX, mY) {};
+        item.up = function(mX, mY) {
+            createPoint({x:toIX(mX), y:toIY(mY)});
+        };
         return item;
     }
 
@@ -371,7 +427,6 @@ $(function() {
         var x = (e.pageX-left) * DPI;
         var y = (e.pageY-top) * DPI;
         console.log("mouse down:", x, y);
-        console.log("Image space:", toIX(x), toIY(y));
         // find item that has been clicked
         for(var i=0;i<clickable.length;i++) {
             var it = clickable[i].click(x, y);
@@ -398,7 +453,7 @@ $(function() {
         var y = (e.pageY-$(this).offset().top) * DPI;
         $(window).unbind("mousemove");
         if (!click.isDragging) {
-            //console.log("mouse up:",x ,y);
+            console.log("mouse up:",x ,y);
             click.item.up(x, y);
         }
         else {
@@ -417,16 +472,24 @@ $(function() {
         createEllipse();
         draw();
     })
-    $('#ellipse_list').on('click', 'li .remove-ellipse', function() {
-        removeEllipse($('#ellipse_list li .remove-ellipse').index($(this)));
+    $("#remove_ellipse").click(function(){
+        removeEllipse(lastSel_Ellipse);
+        draw();
+    })
+    $('#ellipse_list').on('click', 'li', function() {
+        switchEllipse($(this).index());
         draw();
     });
     $("#add_point").click(function(){
         createPoint();
         draw();
     })
-    $('#point_list').on('click', 'li .remove-point', function() {
-        removePoint($('#point_list li .remove-point').index($(this)));
+    $("#remove_point").click(function(){
+        removePoint(lastSel_Point);
+        draw();
+    })
+    $('#point_list').on('click', 'li', function() {
+        switchPoint($(this).index());
         draw();
     });
     $("#save_items").click(function(){
@@ -441,11 +504,11 @@ $(function() {
         canvasP.yDisp = (yM * diff) + toPS(canvas.height/2);
         console.log(xM, canvasP.xDisp);
         */
-        canvasP.scale += 0.2;
+        canvasP.scale *= 1.1;
         draw();
     })
     $("#zoom_out").click(function(){
-        canvasP.scale -= 0.2;
+        canvasP.scale /= 1.1;
         draw();
     })
 });
