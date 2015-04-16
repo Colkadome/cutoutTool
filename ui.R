@@ -3,7 +3,9 @@ shinyUI(fluidPage(id="main-page",
     tags$head(
         tags$title("Cutout Tool"),
         #tags$link(rel="shortcut icon", href="favicon.ico"),
+        tags$link(rel="stylesheet", type = "text/css", href = "jquery-ui.min.css"),
         tags$link(rel="stylesheet", type = "text/css", href = "cutout.css"),
+        tags$script(src="jquery-ui.min.js"),
         tags$script(src="cutout.js")
     ),
     
@@ -27,8 +29,9 @@ shinyUI(fluidPage(id="main-page",
             tags$ul(id="point_list"),
             tags$button(id="save_items", type="button", class="btn btn-default",span("Save Items")),
             h4("Colors"),
-            tags$input(type="text", value="#FF0000", " Ellipses"),
-            tags$input(type="text", value="#FF0000", " Points")
+            tags$div(id="red"),
+            tags$div(id="green"),
+            tags$div(id="blue")
         ),
         mainPanel(
             tags$canvas(id="canvas1",width=420,height=420),

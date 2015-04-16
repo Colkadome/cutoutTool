@@ -26,6 +26,13 @@ $(function() {
     var ellipses = [];
     var points = [];
     var img = new Image();
+    
+    // Color data
+    var colors = {
+        line:"#FF0000",
+        pC_A:"#00AACC",
+        pB:"#00CC00"
+    }
 
     // SERVER FUNCTIONS //
     //////////////////////
@@ -68,7 +75,6 @@ $(function() {
     // ELLIPSE FUNCTIONS //
     ///////////////////////
 
-    // add params!
     function createEllipse(params) {
         var ellipse = {};
         if (params == null) {
@@ -85,15 +91,19 @@ $(function() {
             ellipse.pB = {x:0,y:0};
             ellipse.radB = 40;
         }
-        ellipse.centreMode = true;
-        ellipse.color = "#FF0000";
+        ellipse.isSelected = false;
 
         ellipse.draw = function() {
+
+            // set draw properties
+            if(!this.isSelected) {
+                ctx.globalAlpha = 0.8;
+            }
+            ctx.strokeStyle = colors.line;
 
             // Draw the ellipse
             ctx.beginPath();
             ctx.ellipse(toCX(this.pC.x),toCY(this.pC.y),toCS(this.getradA()),toCS(this.radB),this.getrot(),0,2*Math.PI);
-            ctx.strokeStyle = this.color;
             ctx.lineWidth = 2;
             ctx.stroke();
 
@@ -101,15 +111,17 @@ $(function() {
             ctx.beginPath();
             ctx.moveTo(toCX(this.pC.x),toCY(this.pC.y));
             ctx.lineTo(toCX(this.pA.x),toCY(this.pA.y));
-            ctx.strokeStyle = this.color;
             ctx.lineWidth = 1;
             ctx.stroke();
 
             // Draw the squares
             var size = 8;
-            drawSquare(toCX(this.pC.x),toCY(this.pC.y),size,"#00CCFF");
-            drawSquare(toCX(this.pA.x),toCY(this.pA.y),size,"#00CCFF");
-            drawSquare(toCX(this.pB.x),toCY(this.pB.y),size,"#00CC00");
+            drawSquare(toCX(this.pC.x),toCY(this.pC.y),size,colors.pC_A,2);
+            drawSquare(toCX(this.pA.x),toCY(this.pA.y),size,colors.pC_A,2);
+            drawSquare(toCX(this.pB.x),toCY(this.pB.y),size,colors.pB,2);
+            
+            // reset global alpha
+            ctx.globalAlpha = 1.0;
         }
         ellipse.click = function(xM, yM) {
 
@@ -199,14 +211,14 @@ $(function() {
     function selectEllipse(i) {
         if(i >= 0 && i < ellipses.length) {
             $("#ellipse_list li").eq(i).css("background-color","#CCFFFF");
-            ellipses[i].color = "#FF0000";
+            ellipses[i].isSelected = true;
             lastSel_Ellipse = i;
         }
     }
     function deselectEllipse(i) {
         if(i >= 0 && i < ellipses.length) {
             $("#ellipse_list li").eq(i).css("background-color","none");
-            ellipses[i].color = "#CC0000";
+            ellipses[i].isSelected = false;
         }
     }
     function removeEllipse(i) {
@@ -236,10 +248,14 @@ $(function() {
             // params were specified, use the params
             point.pos = {x:params.x, y:params.y};
         }
-        point.color = "#FF0000";
+        point.isSelected = false;
+        
         point.draw = function() {
-            // Draw the cross
-            drawCross(toCX(this.pos.x),toCY(this.pos.y), 6, point.color);
+            if(!this.isSelected) {
+                ctx.globalAlpha = 0.8;
+            }
+            drawCross(toCX(this.pos.x),toCY(this.pos.y), 6, colors.line, 2);
+            ctx.globalAlpha = 1.0;
         }
         point.click = function(xM, yM) {
             var b = 8; // bounds
@@ -281,14 +297,14 @@ $(function() {
     function selectPoint(i) {
         if(i >= 0 && i < points.length) {
             $("#point_list li").eq(i).css("background-color","#CCFFFF");
-            points[i].color = "#FF0000";
+            points[i].isSelected = true;
             lastSel_Point = i;
         }
     }
     function deselectPoint(i) {
         if(i >= 0 && i < points.length) {
             $("#point_list li").eq(i).css("background-color","none");
-            points[i].color = "#CC0000";
+            points[i].isSelected = false;
         }
     }
     function removePoint(i) {
@@ -309,7 +325,7 @@ $(function() {
     ////////////////////
 
     // draw a simple sqare at (x, y)
-    function drawSquare(x, y, size, color) {
+    function drawSquare(x, y, size, color, lW) {
         ctx.beginPath();
         ctx.moveTo(x-size,y-size);
         ctx.lineTo(x+size,y-size);
@@ -317,14 +333,14 @@ $(function() {
         ctx.lineTo(x-size,y+size);
         ctx.closePath();
         ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = lW;
         ctx.stroke();
     }
     
     // draw a cross shape
-    function drawCross(x, y, size, color) {
+    function drawCross(x, y, size, color, lW) {
         ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = lW;
         
         ctx.beginPath();
         ctx.moveTo(x-size,y-size);
@@ -511,4 +527,44 @@ $(function() {
         canvasP.scale /= 1.1;
         draw();
     })
+    
+    // COLOR SLIDER FUNCTIONALITY //
+    ////////////////////////////////
+    
+    // set colour properties
+    function refreshColors() {
+        var r = $("#red").slider("value");
+        var g = $("#green").slider("value");
+        var b = $("#blue").slider("value");
+        colors.line = hexFromRGB(r, g, b);
+        draw();
+    }
+    
+    // convert colours to hexadecimal style
+    function hexFromRGB(r, g, b) {
+        var hex = [
+            r.toString( 16 ),
+            g.toString( 16 ),
+            b.toString( 16 )
+        ];
+        $.each( hex, function( nr, val ) {
+            if ( val.length === 1 ) {
+                hex[ nr ] = "0" + val;
+            }
+        });
+        return "#" + hex.join( "" ).toUpperCase();
+    }
+    
+    // Initialise color sliders
+    $("#red, #green, #blue").slider({
+        orientation: "horizontal",
+        range: "min",
+        max: 255,
+        value: 0,
+        slide: refreshColors,
+        change: refreshColors,
+    });
+    $("#red").slider("value", 256);
+    $("#green").slider("value", 0);
+    $("#blue").slider("value", 0);
 });
