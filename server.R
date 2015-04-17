@@ -5,7 +5,7 @@ library(astro)
 
 shinyServer(function(input, output, session) {
     
-    values = reactiveValues(img="www/test2.png")
+    values = reactiveValues(img="testim/164451.png")
     
     # Sets the background image.
     # Should be reactive to the PNG string.

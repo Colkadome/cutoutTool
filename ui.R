@@ -35,6 +35,7 @@ shinyUI(fluidPage(id="main-page",
         ),
         mainPanel(
             tags$canvas(id="canvas1",width=420,height=420),
+            br(),
             tags$button(id="zoom_in", type="button", class="btn btn-default",span(class="glyphicon glyphicon-plus")),
             tags$button(id="zoom_out", type="button", class="btn btn-default",span(class="glyphicon glyphicon-minus"))
         )

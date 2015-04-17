@@ -9,8 +9,8 @@ $(function() {
     var ctx = canvas.getContext("2d");
 
     // set canvas properties
-    var WIDTH = 420;
-    var HEIGHT = 420;
+    var WIDTH = 800;
+    var HEIGHT = 600;
     canvas.style.width = WIDTH + "px";
     canvas.style.height = HEIGHT + "px";
     
@@ -79,10 +79,10 @@ $(function() {
         var ellipse = {};
         if (params == null) {
             // no params, a default ellipse is made
-            ellipse.pC = {x:60,y:60};
-            ellipse.pA = {x:80,y:60};
+            ellipse.pC = {x:toIX(canvas.width/2),y:toIY(canvas.height/2)};
+            ellipse.pA = {x:toIX((canvas.width/2) + 40),y:toIY(canvas.height/2)};
             ellipse.pB = {x:0,y:0};
-            ellipse.radB = 20;
+            ellipse.radB = toIS(40);
         }
         else {
             // params were specified, use the params
@@ -242,7 +242,7 @@ $(function() {
         var point = {};
         if (params == null) {
             // no params, a default point is made
-            point.pos = {x:60,y:20};
+            point.pos = {x:toIX(canvas.width/2),y:toIY(canvas.height/2)};
         }
         else {
             // params were specified, use the params
@@ -512,19 +512,19 @@ $(function() {
         updateShinyItems();
     })
     $("#zoom_in").click(function(){
-        /*
-        var xM = canvasP.xDisp - toPS(canvas.width/2);
-        var yM = canvasP.yDisp - toPS(canvas.height/2);
-        var diff = (canvasP.scale + 0.2) / canvasP.scale;
-        canvasP.xDisp = (xM * diff) + toPS(canvas.width/2);
-        canvasP.yDisp = (yM * diff) + toPS(canvas.height/2);
-        console.log(xM, canvasP.xDisp);
-        */
+        var x = toIX(canvas.width/2);
+        var y = toIY(canvas.height/2);
         canvasP.scale *= 1.1;
+        canvasP.xDisp = toIS(canvas.width/2) - x;
+        canvasP.yDisp = toIS(canvas.height/2) - y;
         draw();
     })
     $("#zoom_out").click(function(){
+        var x = toIX(canvas.width/2);
+        var y = toIY(canvas.height/2);
         canvasP.scale /= 1.1;
+        canvasP.xDisp = toIS(canvas.width/2) - x;
+        canvasP.yDisp = toIS(canvas.height/2) - y;
         draw();
     })
     
