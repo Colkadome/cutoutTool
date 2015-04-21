@@ -60,14 +60,15 @@ $(function() {
     });
     
     function updateShinyItems() {
-        items = [];
+        eList = [];
         for (var i=0; i<ellipses.length; i++) {
-            items.push(ellipses[i].getParams());
+            eList.push(ellipses[i].getParams());
         }
+        pList = [];
         for (var i=0; i<points.length; i++) {
-            items.push(points[i].getParams());
+            pList.push(points[i].getParams());
         }
-        console.log( items);
+        items = {ellipses:eList, points:pList};
         Shiny.onInputChange("items", items);
     }
     
@@ -276,9 +277,6 @@ $(function() {
             var params = {};
             params.x = this.pos.x;
             params.y = this.pos.y;
-            params.radA = null;
-            params.radB = null;
-            params.rot = null;
             return params;
         }
         $("#point_list").append('<li>Point</li>');
