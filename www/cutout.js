@@ -60,16 +60,15 @@ $(function() {
     });
     
     function updateShinyItems() {
-        ellipseParams = [];
+        items = [];
         for (var i=0; i<ellipses.length; i++) {
-            ellipseParams.push(ellipses[i].getParams());
+            items.push(ellipses[i].getParams());
         }
-        pointParams = [];
         for (var i=0; i<points.length; i++) {
-            pointParams.push(points[i].getParams());
+            items.push(points[i].getParams());
         }
-        result = {ellipses:ellipseParams, points:pointParams};
-        Shiny.onInputChange("items", result);
+        console.log( items);
+        Shiny.onInputChange("items", items);
     }
     
     // ELLIPSE FUNCTIONS //
@@ -182,7 +181,8 @@ $(function() {
         }
         ellipse.getParams = function() {
             var params = {};
-            params.centre = {x:this.pC.x, y:this.pC.y}
+            params.x = this.pC.x;
+            params.y = this.pC.y;
             params.radA = this.getradA();
             params.radB = this.radB;
             params.rot = this.getrot();
@@ -273,7 +273,13 @@ $(function() {
             return null;
         }
         point.getParams = function() {
-            return {x:this.pos.x, y:this.pos.y};
+            var params = {};
+            params.x = this.pos.x;
+            params.y = this.pos.y;
+            params.radA = null;
+            params.radB = null;
+            params.rot = null;
+            return params;
         }
         $("#point_list").append('<li>Point</li>');
         points.push(point);
