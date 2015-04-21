@@ -514,7 +514,7 @@ $(function() {
     $("#zoom_in").click(function(){
         var x = toIX(canvas.width/2);
         var y = toIY(canvas.height/2);
-        canvasP.scale *= 1.1;
+        canvasP.scale *= 1.2;
         canvasP.xDisp = toIS(canvas.width/2) - x;
         canvasP.yDisp = toIS(canvas.height/2) - y;
         draw();
@@ -522,7 +522,7 @@ $(function() {
     $("#zoom_out").click(function(){
         var x = toIX(canvas.width/2);
         var y = toIY(canvas.height/2);
-        canvasP.scale /= 1.1;
+        canvasP.scale /= 1.2;
         canvasP.xDisp = toIS(canvas.width/2) - x;
         canvasP.yDisp = toIS(canvas.height/2) - y;
         draw();
