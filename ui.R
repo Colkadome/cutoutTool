@@ -12,7 +12,7 @@ shinyUI(fluidPage(id="main-page",
     # title #
     #########
     
-    h1("Cutout Tool"),
+    h1("Ellipse Overlay Tool"),
     
     # Main Content #
     ################
@@ -20,14 +20,19 @@ shinyUI(fluidPage(id="main-page",
     sidebarLayout(
         sidebarPanel(
             h4("Ellipses"),
-            tags$button(id="add_ellipse",type="button",class="btn btn-default",span(class="glyphicon glyphicon-plus")),
-            tags$button(id="remove_ellipse",type="button",class="btn btn-default",span(class="glyphicon glyphicon-minus")),
+            tags$button(title="Add", id="add_ellipse",type="button",class="btn btn-default",span(class="glyphicon glyphicon-plus")),
+            tags$button(title="Copy", id="copy_ellipse",type="button",class="btn btn-default",span(class="glyphicon glyphicon-record")),
+            tags$button(title="Remove", id="remove_ellipse",type="button",class="btn btn-default",span(class="glyphicon glyphicon-minus")),
             tags$ul(id="ellipse_list"),
             h4("Points"),
-            tags$button(id="add_point",type="button",class="btn btn-default",span(class="glyphicon glyphicon-plus")),
-            tags$button(id="remove_point",type="button",class="btn btn-default",span(class="glyphicon glyphicon-minus")),
+            tags$button(title="Add", id="add_point",type="button",class="btn btn-default",span(class="glyphicon glyphicon-plus")),
+            tags$button(title="Remove", id="remove_point",type="button",class="btn btn-default",span(class="glyphicon glyphicon-minus")),
             tags$ul(id="point_list"),
+            tags$hr(),
             tags$button(id="save_items", type="button", class="btn btn-default",span("Save Items")),
+            tags$button(id="clear_items", type="button", class="btn btn-default",span("Clear All")),
+            actionButton(inputId="test_button", label="test button"),
+            tags$hr(),
             h4("Colors"),
             tags$div(id="red"),
             tags$div(id="green"),

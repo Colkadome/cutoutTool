@@ -22,9 +22,12 @@ canvas {
     cursor: pointer;
 }
 
+#red { width:70%; }
 #red .ui-slider-range { background: #ef2929; }
 #red .ui-slider-handle { border-color: #ef2929; }
+#green { width:70%; }
 #green .ui-slider-range { background: #8ae234; }
 #green .ui-slider-handle { border-color: #8ae234; }
+#blue { width:70%; }
 #blue .ui-slider-range { background: #729fcf; }
 #blue .ui-slider-handle { border-color: #729fcf; }

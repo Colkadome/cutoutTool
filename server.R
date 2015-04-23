@@ -35,6 +35,16 @@ shinyServer(function(input, output, session) {
     })
     
     observe({
+        input$test_button
+        session$sendCustomMessage(
+            type = "custom_setItems",
+            message = list("ellipses"=list(list("x"=400, "y"=300, "radA"=153.4047, "radB"=40, "rot"=0.4519863)),
+                           "points"=list()
+            )
+        )
+    })
+    
+    observe({
         print(input$items)
     })
 })

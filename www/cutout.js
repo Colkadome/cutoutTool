@@ -38,13 +38,17 @@ $(function() {
     //////////////////////
 
     // create an ellipse
-    Shiny.addCustomMessageHandler("custom_addEllipses", function(m) {
-        console.log("addEllipses");
-        for (var i=0; i<m.length; i++) {
-            // CHECK IF POINT OR ELLIPSE?
-            createEllipse(m[i]);
+    Shiny.addCustomMessageHandler("custom_setItems", function(m) {
+        console.log("setItems");
+        clearEllipses();
+        for (var i=0; i<m.ellipses.length; i++) {
+            createEllipse(m.ellipses[i]);
         }
-        updateParams();
+        clearPoints();
+        for (var i=0; i<m.points.length; i++) {
+            createPoint(m.points[i]);
+        }
+        draw();
     });
 
     // set the background image
@@ -86,10 +90,11 @@ $(function() {
         }
         else {
             // params were specified, use the params
-            ellipse.pC = {x:params.centre.x, y:params.centre.y};
-            ellipse.pA = {x:0,y:0}; // SET USING radA AND rot
-            ellipse.pB = {x:0,y:0};
-            ellipse.radB = 40;
+            ellipse.pC = {x:params.x, y:params.y};
+            ellipse.pA = {x:params.x + (Math.cos(params.rot) * params.radA),y:params.y + (Math.sin(params.rot) * params.radA)};
+            ellipse.pB = {x:0,y:0}; // updated at the end of function
+            ellipse.radA = params.radA;
+            ellipse.radB = params.radB;
         }
         ellipse.isSelected = false;
 
@@ -101,24 +106,35 @@ $(function() {
             }
             ctx.strokeStyle = colors.line;
 
+            // get parameters in canvas space
+            var CSradA = toCS(this.getradA());
+            var CSradB = toCS(this.radB);
+            var CSpC = {x:toCX(this.pC.x), y:toCY(this.pC.y)};
+            var CSpA = {x:toCX(this.pA.x), y:toCY(this.pA.y)};
+
             // Draw the ellipse
             ctx.beginPath();
-            ctx.ellipse(toCX(this.pC.x),toCY(this.pC.y),toCS(this.getradA()),toCS(this.radB),this.getrot(),0,2*Math.PI);
+            ctx.ellipse(CSpC.x,CSpC.y,CSradA,CSradB,this.getrot(),0,2*Math.PI);
             ctx.lineWidth = 2;
             ctx.stroke();
 
             // Draw radius line
             ctx.beginPath();
-            ctx.moveTo(toCX(this.pC.x),toCY(this.pC.y));
-            ctx.lineTo(toCX(this.pA.x),toCY(this.pA.y));
+            ctx.moveTo(CSpC.x,CSpC.y);
+            ctx.lineTo(CSpA.x,CSpA.y);
             ctx.lineWidth = 1;
             ctx.stroke();
 
             // Draw the squares
+            var drawAt = 16;
             var size = 8;
-            drawSquare(toCX(this.pC.x),toCY(this.pC.y),size,colors.pC_A,2);
-            drawSquare(toCX(this.pA.x),toCY(this.pA.y),size,colors.pC_A,2);
-            drawSquare(toCX(this.pB.x),toCY(this.pB.y),size,colors.pB,2);
+            if(CSradA > drawAt) {
+                drawSquare(CSpC.x,CSpC.y,size,colors.pC_A,2);
+                drawSquare(CSpA.x,CSpA.y,size,colors.pC_A,2);
+            }
+            if(CSradB > drawAt) {
+                drawSquare(toCX(this.pB.x),toCY(this.pB.y),size,colors.pB,2);
+            }
             
             // reset global alpha
             ctx.globalAlpha = 1.0;
@@ -162,6 +178,10 @@ $(function() {
                             o.radB = Math.sqrt(Math.pow(o.pC.x-o.pB.x,2)+Math.pow(o.pC.y-o.pB.y,2));
                         },
                         rel:function(mX, mY){
+                            if(Math.abs(toCX(o.pB.x) - toCX(o.pA.x))<b && Math.abs(toCY(o.pB.y) - toCY(o.pA.y))<b) {
+                                console.log("CIRCLE");
+                                o.radB = o.getradA();
+                            }
                             o.updatePB();
                         },
                         up:function(mX, mY){}
@@ -170,7 +190,7 @@ $(function() {
             return null;
         }
         ellipse.updatePB = function() {
-            var rot = Math.atan((this.pC.y-this.pA.y)/(this.pC.x-this.pA.x));
+            var rot = this.getrot();
             this.pB.x = this.pC.x + (Math.sin(rot) * this.radB);
             this.pB.y = this.pC.y + (-Math.cos(rot) * this.radB);
         }
@@ -216,6 +236,11 @@ $(function() {
             lastSel_Ellipse = i;
         }
     }
+    function copyEllipse(i) {
+        if(i >= 0 && i < ellipses.length) {
+            createEllipse(ellipses[i].getParams());
+        }
+    }
     function deselectEllipse(i) {
         if(i >= 0 && i < ellipses.length) {
             $("#ellipse_list li").eq(i).css("background-color","none");
@@ -233,6 +258,11 @@ $(function() {
             else {
                 selectEllipse(ellipses.length-1);
             }
+        }
+    }
+    function clearEllipses() {
+        for (var i=ellipses.length-1; i>=0; i--) {
+            removeEllipse(i);
         }
     }
     
@@ -322,6 +352,11 @@ $(function() {
             else {
                 selectPoint(points.length-1);
             }
+        }
+    }
+    function clearPoints() {
+        for (var i=points.length-1; i>=0; i--) {
+            removePoint(i);
         }
     }
 
@@ -448,7 +483,7 @@ $(function() {
         var y = (e.pageY-top) * DPI;
         console.log("mouse down:", x, y);
         // find item that has been clicked
-        for(var i=0;i<clickable.length;i++) {
+        for(var i=clickable.length-1;i>=0;i--) {
             var it = clickable[i].click(x, y);
             if(it != null) {
                 click.item = it;
@@ -492,6 +527,10 @@ $(function() {
         createEllipse();
         draw();
     })
+    $("#copy_ellipse").click(function(){
+        copyEllipse(lastSel_Ellipse);
+        draw();
+    })
     $("#remove_ellipse").click(function(){
         removeEllipse(lastSel_Ellipse);
         draw();
@@ -512,6 +551,11 @@ $(function() {
         switchPoint($(this).index());
         draw();
     });
+    $("#clear_items").click(function(){
+        clearEllipses();
+        clearPoints();
+        draw();
+    })
     $("#save_items").click(function(){
         updateShinyItems();
     })
