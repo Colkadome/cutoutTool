@@ -1,7 +1,7 @@
 shinyUI(fluidPage(id="main-page",
     
     tags$head(
-        tags$title("Cutout Tool"),
+        tags$title("Aperture Tool"),
         #tags$link(rel="shortcut icon", href="favicon.ico"),
         tags$link(rel="stylesheet", type = "text/css", href = "jquery-ui.min.css"),
         tags$link(rel="stylesheet", type = "text/css", href = "cutout.css"),
@@ -12,7 +12,7 @@ shinyUI(fluidPage(id="main-page",
     # title #
     #########
     
-    h1("Ellipse Overlay Tool"),
+    h1("Aperture Tool"),
     
     # Main Content #
     ################
