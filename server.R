@@ -10,8 +10,9 @@ shinyServer(function(input, output, session) {
         if(!is.na(CATAID)){
             ##################
             
-            # read pixels (likely from somewhere!)
-            pixels = readPNG(values$img)
+            #### TEST SHORTER VERSION ###
+            # read pixels from file
+            pixels = readPNG(paste(mainpath,CATAID,".png",sep=""))
             
             # write to temporary file
             outfile = tempfile(fileext = ".png")
@@ -24,6 +25,12 @@ shinyServer(function(input, output, session) {
             
             # delete temporary file
             unlink(outfile)
+            ##### SHORTER: #######
+#             path = paste(mainpath,CATAID,".png",sep="")
+#             uri = dataURI(
+#                 file=path,
+#                 mime="image/png")
+            ######################
             
             # send uri to javascript canvas (SEND WIDTH AND HEIGHT DATA TOO)
             session$sendCustomMessage(
